@@ -35,3 +35,6 @@ SELECT * FROM clube
 
 -- correçãoc
 SELECT * FROM clube WHERE nome ILIKE '%Vas%' 
+
+--clube vazio
+INSERT INTO clube (nome,vitorias) VALUES ('sem clube', 0)

@@ -85,7 +85,7 @@ def apagar_dados():
         print("jogador apagado com sucesso!")
 
     elif decisao == "2":
-        print("apagar um clube vai apagar todos os jogadores desse clube!")
+        print("apagar um clube vai mover todos os jogadores para ficarem sem clube!")
         nome = input("digite o nome do clube: ")
 
         cursor.execute(
