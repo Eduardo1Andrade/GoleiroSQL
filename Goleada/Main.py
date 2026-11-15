@@ -1,5 +1,5 @@
 
-import func
+import funcrot
 import sys
 
 

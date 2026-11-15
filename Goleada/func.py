@@ -27,7 +27,28 @@ def login():
         print("login não aceito")
         sys.exit()
 
+def verificar_clube_existe (clube_id): # função que verifica se tem nome 
+    # returna true ou false
+    cursor.execute(
+        "SELECT EXISTS (SELECT 1 FROM clube WHERE clube_id = %s);",
+            (clube_id,)
+            )
 
+def verificar_nome_igual(nome, tipo): # função que verifica se tem nome repetido
+    # retorna true ou false
+    if tipo == 1:
+        cursor.execute(
+            "SELECT EXISTS (SELECT 1 FROM jogador WHERE nome = %s);",
+            (nome,)
+            )
+        return cursor.fetchone()[0]
+
+    elif tipo == 2:
+        cursor.execute(
+            "SELECT EXISTS (SELECT 1 FROM clube WHERE nome = %s);",
+            (nome,)
+            )
+        return cursor.fetchone()
 def criar_dados():
     decisao = input(
         "o que deseja criar?\n"
@@ -41,6 +62,19 @@ def criar_dados():
         camisa_jogador = int(input("digite o numero da camisa do jogador: "))
         clube_id = int(input("digite o id do clube: "))
 
+        nome_igual = verificar_nome_igual(novo_nome,1)
+        print(nome_igual)
+        if nome_igual == True: # verifica se o nome é repetido
+            print("não pode colocar nome que ja existe")
+            return
+
+        clube_existe = verificar_clube_existe(clube_id)
+
+        if clube_existe == False: # se não existe atribuir o id de "sem clube"
+            clube_id = cursor.execute(
+                "SELECT clube_id FROM clube WHERE nome = 'sem clube'"
+            )
+
         cursor.execute(
             "INSERT INTO jogador (nome, numero_camisa, fk_clube_id) "
             "VALUES (%s, %s, %s)",
@@ -50,12 +84,18 @@ def criar_dados():
     elif decisao == "2":
         novo_nome = input("digite o nome do clube: ")
         vitorias = int(input("digite o numero de vitorias do clube: "))
+        nome_igual = nome_igual(novo_nome,2)
+
+        if nome_igual == True:
+            print("não pode colocar nome que ja existe")
+            return
 
         cursor.execute(
             "INSERT INTO clube (nome, vitorias) VALUES (%s, %s)",
             (novo_nome, vitorias)
         )
-
+        print("clube não indentitificado, por padrão será usado (sem clube)")
+        
     else:
         print("opção inválida.")
         return
@@ -85,7 +125,7 @@ def apagar_dados():
         print("jogador apagado com sucesso!")
 
     elif decisao == "2":
-        print("apagar um clube vai mover todos os jogadores para ficarem sem clube!")
+        print("apagar um clube vai mover todos os jogadores seram movidos para (sem clube!)")
         nome = input("digite o nome do clube: ")
 
         cursor.execute(
@@ -106,7 +146,7 @@ def apagar_dados():
         clube_id = resultados[0][0]
 
         cursor.execute(
-            "DELETE FROM jogador WHERE fk_clube_id = %s",
+            "UPDATE jogador SET fk_clube_id = (SELECT clube_id FROM clube WHERE nome = 'sem clube') WHERE fk_clube_id = %s",
             (clube_id,)
         )
 
