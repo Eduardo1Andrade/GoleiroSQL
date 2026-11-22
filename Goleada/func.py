@@ -1,6 +1,8 @@
 
 import psycopg
 import sys
+import streamlit as st
+
 
 conexao = psycopg.connect(
     host="localhost",
@@ -11,22 +13,32 @@ conexao = psycopg.connect(
 )
 cursor = conexao.cursor()
 
-
 def login():
-    nome = input("digite o nome do login: ")
-    senha = input("digite a senha: ")
+    
+    if "sign_in" not in st.session_state:
+        st.session_state.sign_in = False
 
-    cursor.execute(
-        "SELECT * FROM login WHERE nome = %s AND senha = %s",
-        (nome, senha)
-    )
+    if not st.session_state.sign_in:
+        usuario = st.text_input("digite o nome do login: ")
+        senha = st.text_input("digite a senha: ")
 
-    if cursor.fetchone():
-        print("login aceito!!!")
+        if st.button("Entrar"):
+            cursor.execute(
+                "SELECT * FROM login WHERE nome = %s AND senha = %s",
+                (usuario, senha)
+            )
+
+            if cursor.fetchone():
+                st.session_state.sign_in = True
+                st.text("Login Feito com Sucesso!!")
+                st.rerun()
+                
+            else:
+                st.text("login não aceito")
+                sys.exit()
     else:
-        print("login não aceito")
-        sys.exit()
-
+        return True
+       
 def verificar_clube_existe (clube_id): # função que verifica se tem nome 
     # returna true ou false
     cursor.execute(
@@ -49,60 +61,86 @@ def verificar_nome_igual(nome, tipo): # função que verifica se tem nome repeti
             (nome,)
             )
         return cursor.fetchone()
+
+def verificar_tipo_int(dado): # verifica se dado é int
+    if type(dado) is not int:
+        return False
+    else:
+        return True
+
 def criar_dados():
-    decisao = input(
-        "o que deseja criar?\n"
-        "[1] jogador\n"
-        "[2] clube\n"
-        "opção: "
+    decisao = st.selectbox(
+        "o que deseja criar?",
+        ["jogador","clube"]
     )
 
-    if decisao == "1":
-        novo_nome = input("digite o nome do jogador: ")
-        camisa_jogador = int(input("digite o numero da camisa do jogador: "))
-        clube_id = int(input("digite o id do clube: "))
+    if decisao == "jogador":
+        
+        novo_nome = st.text_input("digite o nome do jogador: ")
+        camisa_jogador = st.text_input("digite o numero da camisa do jogador: ")
+        clube_id = st.text_input("digite o id do clube: ")
 
-        nome_igual = verificar_nome_igual(novo_nome,1)
-        print(nome_igual)
-        if nome_igual == True: # verifica se o nome é repetido
-            print("não pode colocar nome que ja existe")
-            return
+        if st.button("Cadastrar"):
 
-        clube_existe = verificar_clube_existe(clube_id)
+            # verificações
+            if not novo_nome or not camisa_jogador or not clube_id:
+                st.text("Preencha todos os campos")
+                return
 
-        if clube_existe == False: # se não existe atribuir o id de "sem clube"
-            clube_id = cursor.execute(
-                "SELECT clube_id FROM clube WHERE nome = 'sem clube'"
-            )
+            if verificar_tipo_int(camisa_jogador) == False or verificar_tipo_int(clube_id) == False:
+                st.text("por favor digite dado numerico valido em camisa de jogador ou id clube")
+                return 
 
-        cursor.execute(
+            if verificar_nome_igual(novo_nome,1) == True: # verifica se o nome é repetido
+                st.text("não pode colocar nome que ja existe")
+                return
+
+            if verificar_clube_existe(clube_id) == False: # se não existe atribuir o id de "sem clube"
+                clube_id = cursor.execute(
+                    "SELECT clube_id FROM clube WHERE nome = 'sem clube'"
+                )
+                st.text("clube não indentitificado, por padrão será usado (sem clube)")
+
+
+            #efetivação
+    
+            cursor.execute(
             "INSERT INTO jogador (nome, numero_camisa, fk_clube_id) "
             "VALUES (%s, %s, %s)",
             (novo_nome, camisa_jogador, clube_id)
-        )
+            )
 
-    elif decisao == "2":
-        novo_nome = input("digite o nome do clube: ")
-        vitorias = int(input("digite o numero de vitorias do clube: "))
+            conexao.commit()
+            st.success("jogador criado com sucesso!!!")
+            return
+
+    elif decisao == "clube":
+        novo_nome = st.text_input("digite o nome do clube: ")
+        vitorias = st.text_input("digite o numero de vitorias do clube: ")
+
+        dado_int = verificar_tipo_int(vitorias)
+
+        if dado_int == False: # verificar se é int
+            st.text("por favor digite dado numerico valido em vitorias!!")
         nome_igual = nome_igual(novo_nome,2)
 
-        if nome_igual == True:
-            print("não pode colocar nome que ja existe")
+        if nome_igual == True: # verificar nome é unico
+            st.text("não pode colocar nome que ja existe")
             return
 
         cursor.execute(
             "INSERT INTO clube (nome, vitorias) VALUES (%s, %s)",
             (novo_nome, vitorias)
-        )
-        print("clube não indentitificado, por padrão será usado (sem clube)")
-        
+        )        
+
+        conexao.commit()
+        st.text("clube criado com sucesso!!")
+
     else:
-        print("opção inválida.")
+        st.text("opção inválida.")
         return
 
-    conexao.commit()
-    print("processando.....")
-    print("feito")
+
 
 
 def apagar_dados():

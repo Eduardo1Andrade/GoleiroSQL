@@ -1,43 +1,57 @@
 
-import funcrot
+import func
 import sys
+import streamlit as st
+import pandas as pd
 
+
+st.title("Programa Gerenciamento de jogadores e times de futebol V2.0")
 
 def main():
-    print("programa sobre jogadores e times de futebol")
+ 
+    if "tela" not in st.session_state:
+        st.session_state.tela = "inicial"
+    
+    if st.session_state.tela == "inicial":
 
-    decisao = ""
+        # controle de seção
+        if st.button("Criar Dados"):
+            st.session_state.tela = "criar_dados"
+         
 
-    while decisao != "5":
-        decisao = input(
-            "\ndigite sua operação:\n"
-            "[1] criar dados\n"
-            "[2] excluir dados\n"
-            "[3] atualizar dados\n"
-            "[4] listar dados\n"
-            "[5] sair\n"
-            "opção: "
-        )
+        elif st.button("apagar Dados"):
+            st.session_state.tela = "apagar_dados"
+       
 
-        if decisao == "1":
-            func.criar_dados()
+        elif st.button("Atualizar Dados"):
+            st.session_state.tela = "atualizar_dados"
+    
 
-        elif decisao == "2":
-            func.apagar_dados()
+        elif st.button("Listar Dados"):
+            st.session_state.tela = "listar_dados"
+          
 
-        elif decisao == "3":
-            func.atualizar_dados()
-
-        elif decisao == "4":
-            func.listar_dados()
-
-        elif decisao == "5":
-            print("encerrando o programa...")
+        elif st.button("Sair"):
+            st.text("encerrando o programa...")
             return
 
-        else:
-            print("opção inválida!!")
+        # função
+        if st.session_state.tela == "criar_dados":
+            func.criar_dados()
+        
+        
+        elif st.session_state.tela == "apagar_dados":
+            func.apagar_dados()
+
+        
+        if st.session_state.tela == "atualizar_dados":
+            func.atualizar_dados()
+
+        if st.session_state.tela == "listar_dados":
+            func.listar_dados()
 
 
-func.login()
-main()
+
+resposta = func.login()
+if resposta == True:
+    main()
