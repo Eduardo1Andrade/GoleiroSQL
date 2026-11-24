@@ -15,6 +15,7 @@ CREATE TABLE jogador (
 );
 
 CREATE TABLE login(
+	login_id SERIAL PRIMARY KEY,
 	nome VARCHAR(200) NOT NULL,
 	senha VARCHAR(20) NOT NULL
 );
@@ -88,7 +89,10 @@ INSERT INTO clube (nome, vitorias) VALUES
 -- buscas
 -- clube com mais vitorias
 SELECT nome,MAX(vitorias) FROM clube 
-GROUP BY nome LIMIT 1;
+GROUP BY nome LIMIT 1 WHERE gols = (
+    SELECT MAX(gols)
+    FROM jogador
+);;
 -- clube com menos vitorias
 SELECT nome, MIN(vitorias) FROM clube
 GROUP BY nome LIMIT 1;

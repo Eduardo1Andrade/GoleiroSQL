@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 
 
-st.title("Programa Gerenciamento de jogadores e times de futebol V2.0")
+st.title("Goleda Datalens V2.0")
 
 def main():
  

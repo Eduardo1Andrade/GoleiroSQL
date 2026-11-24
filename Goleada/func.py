@@ -666,7 +666,7 @@ def dados_estatisticos():
     FROM jogador
     GROUP BY numero_camisa
     HAVING COUNT(jogador_id) > 1
-    ORDER BY quantiade DESC
+    ORDER BY quantidade DESC
     LIMIT 5;'''
     )
 

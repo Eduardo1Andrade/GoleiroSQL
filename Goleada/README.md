@@ -1,14 +1,17 @@
 
 ## Sistema
+v2.0
 contem 3 tabelas:
- - 1 jogador: com atributos: id_jogador, nome , numero_camisa e fk_clube_id
- - 2 clube: clube_id, nome, vitorias
+ - 1 jogador: com atributos: id_jogador, nome , numero_camisa ,fk_clube_id e gols
+ - 2 clube: clube_id, nome, vitorias 
+ - 3 login : login_id , senha e usuario
 
 CRUD basico com algumas verificações porem pode dar erro ao digitar numeros em vez de letras nos campos onde peça algum numero tirando a navegação por menu.
 
+interface streamlit + todas as funcionalidades nela com ausencia de terminal na sua versão v2.0
 ## Tecnologias:
 - docker para rodar containar postgres
-- python com lib- psycopg
+- python: + (psycopg, pandas, plotly e streamlit
 - postgres
 - pg admin
 
@@ -19,6 +22,6 @@ CRUD basico com algumas verificações porem pode dar erro ao digitar numeros em
     No Windows: python -m venv venv e depois .\venv\Scripts\activate
     No Mac/Linux: python3 -m venv venv e depois source venv/bin/activate
     use o terminal para navegar na pasta do projeto usando "cd /pastas/local_do_projeto/"
-    rode "python main.py"
+    rode em streamlit run Main.py
 
 ## usuario de teste = root , senha = 1234
