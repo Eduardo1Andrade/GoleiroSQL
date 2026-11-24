@@ -47,27 +47,27 @@ INSERT INTO clube (nome,vitorias) VALUES ('sem clube', 0)
 
 
 --inserts
-INSERT INTO jogador (nome, numero_camisa, fk_clube_id) VALUES
-('Vinicius Junior', 7, 14),
-('Jude Bellingham', 5, 14),
-('Lamine Yamal', 19, 13),
-('Pedri', 8, 13),
-('Erling Haaland', 9, 13),
-('Phil Foden', 47, 13),
-('Mohamed Salah', 11, 14),
-('Virgil van Dijk', 4, 14),
-('Harry Kane', 9, 15),
-('Jamal Musiala', 10, 15),
-('Ousmane Dembele', 10, 16),
-('Marquinhos', 5, 16),
-('Bukayo Saka', 7, 17),
-('Martin Odegaard', 8, 17),
-('Cole Palmer', 20, 12),
-('Enzo Fernandez', 8, 12),
-('Dusan Vlahovic', 9, 11),
-('Kenan Yildiz', 10, 17),
-('Rafael Leao', 10, 10),
-('Christian Pulisic', 11, 10);
+INSERT INTO jogador (nome, numero_camisa, fk_clube_id, gols) VALUES
+('Vinicius Junior', 7, 14,6),
+('Jude Bellingham', 5, 14,4),
+('Lamine Yamal', 19, 13,1),
+('Pedri', 8, 13,4),
+('Erling Haaland', 9, 13,60),
+('Phil Foden', 47, 13,40),
+('Mohamed Salah', 11, 14,5),
+('Virgil van Dijk', 4, 14,10),
+('Harry Kane', 9, 15,60),
+('Jamal Musiala', 10, 15,14),
+('Ousmane Dembele', 10, 16,10),
+('Marquinhos', 5, 16,60),
+('Bukayo Saka', 7, 17,20),
+('Martin Odegaard', 8, 17,23),
+('Cole Palmer', 20, 12,43),
+('Enzo Fernandez', 8, 12,50),
+('Dusan Vlahovic', 9, 11,20),
+('Kenan Yildiz', 10, 17,15),
+('Rafael Leao', 10, 10,12),
+('Christian Pulisic', 11, 10,20);
 
 INSERT INTO clube (nome, vitorias) VALUES
 ('Real Madrid', 25),
@@ -93,6 +93,11 @@ SELECT CAST(AVG(vitorias) AS DECIMAL(10,2)) FROM clube;
 -- 5 melhores clubes por vitorias
 SELECT nome,vitorias FROM clube 
 ORDER BY vitorias DESC LIMIT 5;
--- 5 clubes com mais jogadores
-SELECT nome FROM clube 
-WHERE clube_id = (SELECT fk_clube_id FROM jogador);
+-- 5 jogadores com mais gols
+SELECT nome,gols FROM jogador ORDER BY gols DESC LIMIT 5;
+
+--
+SELECT numero_camisa, COUNT(jogador_id) AS quantidade
+FROM jogador
+GROUP BY numero_camisa
+HAVING COUNT(jogador_id) > 1 LIMIT 5;

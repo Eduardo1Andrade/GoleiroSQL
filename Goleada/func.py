@@ -94,22 +94,22 @@ def criar_dados():
 
             # verificações
             if not novo_nome or not camisa_jogador or not clube_id:
-                st.text("Preencha todos os campos")
+                st.error("Preencha todos os campos")
                 return
 
             elif verificar_tipo_int(camisa_jogador) == False or verificar_tipo_int(clube_id) == False:
-                st.text("por favor digite dado numerico valido em camisa de jogador ou id clube")
+                st.error("por favor digite dado numerico valido em camisa de jogador ou id clube")
                 return 
 
             elif verificar_nome_igual(novo_nome,1) == True: # verifica se o nome é repetido
-                st.text("não pode colocar nome que ja existe")
+                st.error("não pode colocar nome que ja existe")
                 return
 
             elif verificar_clube_existe(clube_id) == False: # se não existe atribuir o id de "sem clube"
                 clube_id = cursor.execute(
                     "SELECT clube_id FROM clube WHERE nome = 'sem clube'"
                 )
-                st.text("clube não indentitificado, por padrão será usado (sem clube)")
+                st.error("clube não indentitificado, por padrão será usado (sem clube)")
 
 
             #efetivação
@@ -130,10 +130,10 @@ def criar_dados():
 
         if st.button("Cadasttrar"):
             if verificar_tipo_int(vitorias) == False: # verificar se é int
-                st.text("por favor digite dado numerico valido em vitorias!!")
+                st.error("por favor digite dado numerico valido em vitorias!!")
 
             elif verificar_nome_igual(novo_nome,2) == True: # verificar nome é unico
-                st.text("não pode colocar nome que ja existe")
+                st.error("não pode colocar nome que ja existe")
                 return
 
             else:
@@ -143,7 +143,7 @@ def criar_dados():
                 )        
 
                 conexao.commit()
-                st.text("clube criado com sucesso!!")
+                st.success("clube criado com sucesso!!")
 
 
 
@@ -161,7 +161,7 @@ def apagar_dados():
         if st.button("Apagar jogador"):
 
             if not nome:
-                st.text("preencha os dados")
+                st.error("preencha os dados")
                 return
             
             #verifica se tem jogador
@@ -172,11 +172,11 @@ def apagar_dados():
             resultados = cursor.fetchall()
 
             if not resultados:
-                st.text("jogador não encontrado")
+                st.error("jogador não encontrado")
                 return
             
             elif len(resultados) > 1:
-                st.text("mais de um jogador encontrado seja mais expecifico!!")
+                st.error("mais de um jogador encontrado seja mais expecifico!!")
                 return
             jogador = resultados[0][0]
 
@@ -186,7 +186,7 @@ def apagar_dados():
             )
 
             conexao.commit()
-            st.text("jogador apagado com sucesso!")
+            st.sucess("jogador apagado com sucesso!")
 
     elif decisao == "clube":
 
@@ -196,7 +196,7 @@ def apagar_dados():
         if st.button("Apagar Clube"):
             #verificações
             if not nome:
-                st.text("preencha os dados")
+                st.error("preencha os dados")
                 return 
 
             cursor.execute(
@@ -207,11 +207,11 @@ def apagar_dados():
             resultados = cursor.fetchall()
 
             if not resultados:
-                print("clube não encontrado.")
+                st.error("clube não encontrado.")
                 return
 
             elif len(resultados) > 1:
-                print("mais de um clube encontrado. seja mais específico.")
+                st.error("mais de um clube encontrado. seja mais específico.")
                 return
 
             #efetivação
@@ -491,21 +491,66 @@ def dados_estatisticos():
 
     resultados = cursor.fetchall()
 
-    df = pd.DataFrame(
+    data_frame = pd.DataFrame(
         resultados,
         columns=["Clube", "Vitórias"]
     )
 
 
     grafico_barras = pl.bar(
-        df,
+        data_frame,
         x="Clube",
         y="Vitórias",
         title="5 melhores clubes com mais vitórias",
         text="Vitórias"
     )
 
-    st.plotly_chart(grafico_barras, use_container_width=True)
+    st.plotly_chart(grafico_barras, width='stretch')
 
     #gols por jogador
+    cursor.execute( 
+    "SELECT nome,gols FROM jogador ORDER BY gols DESC LIMIT 5;"
+    )
+
+    resultados = cursor.fetchall()
+
+    data_frame_2 = pd.DataFrame(
+        resultados,
+        columns=["jogadores", "gols"]
+    )
+
+    grafico_pizza = pl.pie (
+        data_frame_2,
+        names="jogadores",
+        values="gols",
+        title="melhores jogadores por gols",
+        hole=0.3
+    )
     
+
+    st.plotly_chart(grafico_pizza, width='stretch')
+
+    # numero de camisa mais usado pelos jogadores.
+    cursor.execute(
+        '''
+    SELECT numero_camisa, COUNT(jogador_id) AS quantidade
+    FROM jogador
+    GROUP BY numero_camisa
+    HAVING COUNT(jogador_id) > 1 LIMIT 5;'''
+    )
+
+    resultados = cursor.fetchall()
+
+    data_frame_3 = pd.DataFrame(
+        resultados,
+        columns=["numero_da_camisa","quantidade"]
+    )
+
+    grafico_pizza_2 = pl.pie(
+        data_frame_3,
+        names="numero_camisa",
+        values="quantidades",
+        title="numero de camisa mais usados pelos jogadores"
+    )
+
+    st.plotly_chart(grafico_pizza_2,width='stretch')
