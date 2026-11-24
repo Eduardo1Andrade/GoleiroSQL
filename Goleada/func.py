@@ -20,7 +20,7 @@ def login():
 
     if not st.session_state.sign_in:
         usuario = st.text_input("digite o nome do login: ")
-        senha = st.text_input("digite a senha: ")
+        senha = st.text_input("digite a senha: ",type="password")
 
         if st.button("Entrar"):
             cursor.execute(
@@ -125,7 +125,7 @@ def criar_dados():
         if st.button("Cadastrar"):
 
             # verificações
-            if not novo_nome or not camisa_jogador or not clube_id:
+            if not novo_nome or not camisa_jogador or not clube_id or not gol:
                 st.error("Preencha todos os campos")
                 return
 
@@ -135,17 +135,18 @@ def criar_dados():
 
             gol = int(gol)
             clube_id = int(clube_id)
+            camisa_jogador = int(camisa_jogador)
 
             if verificar_nome_igual(novo_nome,"1"): # verifica se o nome é repetido
                 st.error("não pode colocar nome que ja existe")
                 return
 
             if not verificar_clube_existe(clube_id): # se não existe atribuir o id de "sem clube"
-                clube_id = cursor.execute(
+                cursor.execute(
                     "SELECT clube_id FROM clube WHERE nome = 'sem clube'"
                 )
                 st.warning("clube não indentitificado, por padrão será usado (sem clube)")
-                clube_id = cursor.fetchall()[0]
+                clube_id = cursor.fetchall()[0][0]
 
             #efetivação
             cursor.execute(
@@ -162,15 +163,19 @@ def criar_dados():
         novo_nome = st.text_input("digite o nome do clube: ")
         vitorias = st.text_input("digite o numero de vitorias do clube: ")
 
-        if st.button("Cadasttrar"):
-            if verificar_tipo_int(vitorias) == False: # verificar se é int
-                st.error("por favor digite dado numerico valido em vitorias!!")
+        if st.button("Cadastrar"):
+
+            if not verificar_dados(novo_nome,"1"):
+                return
+            if not verificar_dados(vitorias,"2"):
+                return
 
             elif verificar_nome_igual(novo_nome,"2") == True: # verificar nome é unico
                 st.error("não pode colocar nome que ja existe")
                 return
-
+                
             else:
+                vitorias = int(vitorias)
                 cursor.execute(
                     "INSERT INTO clube (nome, vitorias) VALUES (%s, %s)",
                     (novo_nome, vitorias)
@@ -194,7 +199,8 @@ def apagar_dados():
 
         if st.button("Apagar jogador"):
 
-            verificar_dados(nome,"1")
+            if not verificar_dados(nome,"1"):
+                return
             #verifica se tem jogador
             cursor.execute(
                 "SELECT jogador_id FROM jogador WHERE nome ILIKE %s",
@@ -219,7 +225,10 @@ def apagar_dados():
 
         if st.button("Apagar Clube"):
             #verificações
-            verificar_dados(nome,"1")
+
+            if not verificar_dados(nome,"1"):
+                return
+
             cursor.execute(
                 '''SELECT clube_id FROM clube WHERE nome = 'sem clube' '''
             )
@@ -274,12 +283,22 @@ def listar_dados():
 
             #verificações
             if st.button("Buscar"):
-                verificar_dados(nome,"1")
+                if not verificar_dados(nome,"1"):
+                    return
                 #busca
                 cursor.execute(
                     "SELECT nome, numero_camisa FROM jogador WHERE nome ILIKE %s",
                     (f"%{nome}%",)
                 )
+
+                resultado = cursor.fetchall()
+
+                  #veficação
+                if not verificar_resultado_existe(resultado,"1"):
+                    return
+
+                for jogador, numero_camisa in resultado:
+                    st.text(f"jogador: {jogador} | numero da camisa: {numero_camisa}")
 
         elif decisao_2 == "numero da camisa":
             numero_camisa = st.text_input("digite o numero da camisa: ")
@@ -301,7 +320,8 @@ def listar_dados():
                 resultado = cursor.fetchall()
 
                   #veficação
-                verificar_dados(resultado,"1")
+                if not verificar_resultado_existe(resultado,"1"):
+                    return
 
                 for jogador, numero_camisa in resultado:
                     st.text(f"jogador: {jogador} | numero da camisa: {numero_camisa}")
@@ -317,12 +337,21 @@ def listar_dados():
             
             if st.button("Buscar"):
                 #verificações
-                verificar_dados(nome,"1")
+                if not verificar_dados(nome,"1"):
+                    return
                 #busca
                 cursor.execute(
                     "SELECT nome, vitorias FROM clube WHERE nome ILIKE %s",
                     (f"%{nome}%",)
                 )
+
+                resultado = cursor.fetchall()
+
+                if not verificar_resultado_existe(resultado,"1"):
+                    return
+        
+                for clube, vitorias in resultado:
+                    st.text(f"clube: {clube} | vitorias: {vitorias}")
 
         elif decisao_2 == "vitorias":
             vitorias = st.text_input("digite o numero de vitorias: ")
@@ -344,7 +373,8 @@ def listar_dados():
 
                 resultado = cursor.fetchall()
 
-                verificar_resultado_existe(resultado,"1")
+                if not verificar_resultado_existe(resultado,"1"):
+                    return
         
                 for clube, vitorias in resultado:
                     st.text(f"clube: {clube} | vitorias: {vitorias}")
@@ -364,7 +394,8 @@ def listar_dados():
 
             resultado = cursor.fetchall()
 
-            verificar_resultado_existe(resultados,"1")
+            if not verificar_resultado_existe(resultado,"1"):
+                return
 
             for jogador, clube in resultado:
                 st.text(f"jogador: {jogador} | clube: {clube}")
@@ -382,7 +413,8 @@ def atualizar_dados():
 
         #verificações
         if st.button("Buscar Dado"):
-            verificar_dados(nome,"1")
+            if not verificar_dados(nome,"1"):
+                return
             
             cursor.execute(
                 "SELECT jogador_id FROM jogador WHERE nome ILIKE %s",
@@ -391,50 +423,53 @@ def atualizar_dados():
 
             resultado = cursor.fetchall()
 
-            verificar_resultado_existe(resultado,"2")
+            if not verificar_resultado_existe(resultado,"2"):
+                st.session_state.jogador_encontrado = False
+                return
 
             st.session_state.jogador_id = resultado[0][0]
             st.session_state.jogador_encontrado = True
             #edição
 
-            decisao = st.selectbox(
-                "o que deseja atualizar?",
-                ["nome","numero_camisa","clube","gols"]
-            )
-            #edição de jogador por nome
-            if session_state.get("jogador_encontrado", False):
-                if decisao == "nome":
-                    novo_nome = st.text_input("digite o novo nome: ")
+        decisao = st.selectbox(
+            "o que deseja atualizar?",
+            ["nome","numero_camisa","clube","gols"]
+        )
+        #edição de jogador por nome
+        if st.session_state.get("jogador_encontrado", False):
+            if decisao == "nome":
+                novo_nome = st.text_input("digite o novo nome: ")
 
-                    #verficações
-                    if st.button("Atualizar dado"):
-                        verificar_dados(novo_nome,"1")
+                #verficações
+                if st.button("Atualizar dado"):
+                    if not verificar_dados(novo_nome,"1"):
+                        return
 
-                        if verificar_nome_igual(novo_nome,"1"):
-                            st.error("esse nome ja existe, tente novamente")
-                            return
-                        #efetivação
-                        cursor.execute(
-                            "UPDATE jogador SET nome = %s WHERE jogador_id = %s",
-                            (novo_nome, st.session_state.jogador_id)
-                        )
-                    #editar por numero de camisa
-                elif decisao == "numero_camisa":
-                    nova_camisa = st.text_input("digite o novo numero da camisa: ")
+                    if verificar_nome_igual(novo_nome,"1"):
+                        st.error("esse nome ja existe, tente novamente")
+                        return
+                    #efetivação
+                    cursor.execute(
+                        "UPDATE jogador SET nome = %s WHERE jogador_id = %s",
+                        (novo_nome, st.session_state.jogador_id)
+                    )
+                #editar por numero de camisa
+            elif decisao == "numero_camisa":
+                nova_camisa = st.text_input("digite o novo numero da camisa: ")
 
-                    #verficiações
-                    if st.button("Atualizar"):
-                        if not verificar_dados(nova_camisa,"2"):
-                            return
-                        nova_camisa = int(nova_camisa)
-                        
+                #verficiações
+                if st.button("Atualizar"):
+                    if not verificar_dados(nova_camisa,"2"):
+                        return
+                    nova_camisa = int(nova_camisa)
+                    
 
-                        #efetivação
-                        cursor.execute(
-                            "UPDATE jogador SET numero_camisa = %s "
-                            "WHERE jogador_id = %s",
-                            (nova_camisa, st.session_state.jogador_id)
-                        )
+                    #efetivação
+                    cursor.execute(
+                        "UPDATE jogador SET numero_camisa = %s "
+                        "WHERE jogador_id = %s",
+                        (nova_camisa, st.session_state.jogador_id)
+                    )
 
             elif decisao == "clube":
                 clube_id = st.text_input("digite o novo id do clube: ")
@@ -445,7 +480,7 @@ def atualizar_dados():
                         return
                     clube_id = int(clube_id)
 
-                    if verificar_clube_existe(clube_id):
+                    if not verificar_clube_existe(clube_id):
                         st.error("clube não existe")
                         return
 
@@ -477,8 +512,8 @@ def atualizar_dados():
 
 
 
-            conexao.commit()
-            st.success("dados do jogador atualizados com sucesso!")
+                conexao.commit()
+                st.success("dados do jogador atualizados com sucesso!")
 
     elif decisao == "clube":
         nome = st.text_input("digite o nome atual do clube: ")
@@ -486,7 +521,8 @@ def atualizar_dados():
         
         if st.button("Buscar Dado"):
             #verficiações
-            verificar_dados(nome,"1")
+            if not verificar_dados(nome,"1"):
+                return
 
             #efetivação
             cursor.execute(
@@ -496,43 +532,46 @@ def atualizar_dados():
 
             resultado = cursor.fetchall()
 
-            verificar_resultado_existe(resultado,"2")
+            if not verificar_resultado_existe(resultado,"2"):
+                st.session_state.clube_encontrado = False
+                return
 
             st.session_state.clube_id = resultado[0][0]
             st.session_state.clube_encontrado = True
 
-            if st.session_state.get("clube_encontrado", False):
-                decisao = st.selectbox(
-                    "o que deseja atualizar?",
-                    ["nome","vitorias"]
-                )
+        if st.session_state.get("clube_encontrado", False):
+            decisao = st.selectbox(
+                "o que deseja atualizar?",
+                ["nome","vitorias"]
+            )
 
-                if decisao == "nome":
-                    novo_nome = st.text_input("digite o novo nome do clube: ")
+            if decisao == "nome":
+                novo_nome = st.text_input("digite o novo nome do clube: ")
 
-                    if st.button("Atualizar dado"):
-                        #verificações   
-                        verificar_dados(novo_nome,"1")
+                if st.button("Atualizar dado"):
+                    #verificações   
+                    if not verificar_dados(novo_nome,"1"):
+                        return
 
 
-                        cursor.execute(
-                            "UPDATE clube SET nome = %s WHERE clube_id = %s",
-                            (novo_nome, clube_id)
-                        )
+                    cursor.execute(
+                        "UPDATE clube SET nome = %s WHERE clube_id = %s",
+                        (novo_nome, st.session_state.clube_id)
+                    )
 
-                elif decisao == "vitorias":
-                    vitorias = st.text_input("digite o novo numero de vitorias: ")
+            elif decisao == "vitorias":
+                vitorias = st.text_input("digite o novo numero de vitorias: ")
 
-                    if st.button("Atualizar dado"):
-                        #verificações
-                        if not verificar_dados(vitorias,"2"):
-                            return
-                        vitorias = int(vitorias)
+                if st.button("Atualizar dado"):
+                    #verificações
+                    if not verificar_dados(vitorias,"2"):
+                        return
+                    vitorias = int(vitorias)
 
-                        cursor.execute(
-                            "UPDATE clube SET vitorias = %s WHERE clube_id = %s",
-                            (vitorias, clube_id)
-                        )
+                    cursor.execute(
+                        "UPDATE clube SET vitorias = %s WHERE clube_id = %s",
+                        (vitorias, st.session_state.clube_id)
+                    )
 
                 conexao.commit()
                 st.success("dados do clube atualizados com sucesso!")
