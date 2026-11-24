@@ -2,7 +2,8 @@
 import psycopg
 import sys
 import streamlit as st
-
+import pandas as pd
+import plotly.express as pl
 
 conexao = psycopg.connect(
     host="localhost",
@@ -46,27 +47,35 @@ def verificar_clube_existe (clube_id): # função que verifica se tem nome
             (clube_id,)
             )
 
+def verificar_jogador_existe(nome_jogador): # função que verifica se tem nome 
+    # returna true ou false
+    cursor.execute(
+        "SELECT EXISTS (SELECT 1 FROM jogador WHERE nome = %s);",
+            (nome_jogador,)
+            )
+
 def verificar_nome_igual(nome, tipo): # função que verifica se tem nome repetido
     # retorna true ou false
     if tipo == 1:
         cursor.execute(
-            "SELECT EXISTS (SELECT 1 FROM jogador WHERE nome = %s);",
+            "SELECT EXISTS (SELECT * FROM jogador WHERE nome = %s);",
             (nome,)
             )
         return cursor.fetchone()[0]
 
     elif tipo == 2:
         cursor.execute(
-            "SELECT EXISTS (SELECT 1 FROM clube WHERE nome = %s);",
+            "SELECT EXISTS (SELECT * FROM clube WHERE nome = %s);",
             (nome,)
             )
-        return cursor.fetchone()
+        return cursor.fetchone()[0]
 
 def verificar_tipo_int(dado): # verifica se dado é int
-    if type(dado) is not int:
-        return False
-    else:
+    try:
+        int(dado)
         return True
+    except ValueError:
+        return False
 
 def criar_dados():
     decisao = st.selectbox(
@@ -75,10 +84,11 @@ def criar_dados():
     )
 
     if decisao == "jogador":
-        
+
         novo_nome = st.text_input("digite o nome do jogador: ")
         camisa_jogador = st.text_input("digite o numero da camisa do jogador: ")
         clube_id = st.text_input("digite o id do clube: ")
+        gol = st.text_input("digite o numero de gols desse jogador")
 
         if st.button("Cadastrar"):
 
@@ -87,15 +97,15 @@ def criar_dados():
                 st.text("Preencha todos os campos")
                 return
 
-            if verificar_tipo_int(camisa_jogador) == False or verificar_tipo_int(clube_id) == False:
+            elif verificar_tipo_int(camisa_jogador) == False or verificar_tipo_int(clube_id) == False:
                 st.text("por favor digite dado numerico valido em camisa de jogador ou id clube")
                 return 
 
-            if verificar_nome_igual(novo_nome,1) == True: # verifica se o nome é repetido
+            elif verificar_nome_igual(novo_nome,1) == True: # verifica se o nome é repetido
                 st.text("não pode colocar nome que ja existe")
                 return
 
-            if verificar_clube_existe(clube_id) == False: # se não existe atribuir o id de "sem clube"
+            elif verificar_clube_existe(clube_id) == False: # se não existe atribuir o id de "sem clube"
                 clube_id = cursor.execute(
                     "SELECT clube_id FROM clube WHERE nome = 'sem clube'"
                 )
@@ -103,104 +113,127 @@ def criar_dados():
 
 
             #efetivação
-    
-            cursor.execute(
-            "INSERT INTO jogador (nome, numero_camisa, fk_clube_id) "
-            "VALUES (%s, %s, %s)",
-            (novo_nome, camisa_jogador, clube_id)
-            )
+            else:
+                cursor.execute(
+                "INSERT INTO jogador (nome, numero_camisa, fk_clube_id, gols) "
+                "VALUES (%s, %s, %s, %s)",
+                (novo_nome, camisa_jogador, clube_id)
+                )
 
-            conexao.commit()
-            st.success("jogador criado com sucesso!!!")
-            return
+                conexao.commit()
+                st.success("jogador criado com sucesso!!!")
+                return
 
     elif decisao == "clube":
         novo_nome = st.text_input("digite o nome do clube: ")
         vitorias = st.text_input("digite o numero de vitorias do clube: ")
 
-        dado_int = verificar_tipo_int(vitorias)
+        if st.button("Cadasttrar"):
+            if verificar_tipo_int(vitorias) == False: # verificar se é int
+                st.text("por favor digite dado numerico valido em vitorias!!")
 
-        if dado_int == False: # verificar se é int
-            st.text("por favor digite dado numerico valido em vitorias!!")
-        nome_igual = nome_igual(novo_nome,2)
+            elif verificar_nome_igual(novo_nome,2) == True: # verificar nome é unico
+                st.text("não pode colocar nome que ja existe")
+                return
 
-        if nome_igual == True: # verificar nome é unico
-            st.text("não pode colocar nome que ja existe")
-            return
+            else:
+                cursor.execute(
+                    "INSERT INTO clube (nome, vitorias) VALUES (%s, %s)",
+                    (novo_nome, vitorias)
+                )        
 
-        cursor.execute(
-            "INSERT INTO clube (nome, vitorias) VALUES (%s, %s)",
-            (novo_nome, vitorias)
-        )        
+                conexao.commit()
+                st.text("clube criado com sucesso!!")
 
-        conexao.commit()
-        st.text("clube criado com sucesso!!")
-
-    else:
-        st.text("opção inválida.")
-        return
 
 
 
 
 def apagar_dados():
-    decisao = input(
-        "o que deseja apagar?\n"
-        "[1] jogador\n"
-        "[2] clube\n"
-        "opção: "
+    decisao = st.selectbox( # selecionar dados
+        "o que deseja apagar?",
+        ["jogador","clube"]
     )
 
-    if decisao == "1":
-        nome = input("digite o nome do jogador: ")
+    if decisao == "jogador":
+        nome = st.text_input("digite o nome do jogador: ") #input
 
-        cursor.execute(
-            "DELETE FROM jogador WHERE nome ILIKE %s",
-            (f"%{nome}%",)
-        )
+        if st.button("Apagar jogador"):
 
-        conexao.commit()
-        print("jogador apagado com sucesso!")
+            if not nome:
+                st.text("preencha os dados")
+                return
+            
+            #verifica se tem jogador
+            cursor.execute(
+                "SELECT clube_id FROM clube WHERE nome ILIKE %s",
+                (f"%{nome}%",)
+            )
+            resultados = cursor.fetchall()
 
-    elif decisao == "2":
-        print("apagar um clube vai mover todos os jogadores seram movidos para (sem clube!)")
-        nome = input("digite o nome do clube: ")
+            if not resultados:
+                st.text("jogador não encontrado")
+                return
+            
+            elif len(resultados) > 1:
+                st.text("mais de um jogador encontrado seja mais expecifico!!")
+                return
+            jogador = resultados[0][0]
 
-        cursor.execute(
-            "SELECT clube_id FROM clube WHERE nome ILIKE %s",
-            (f"%{nome}%",)
-        )
+            cursor.execute(
+                "DELETE FROM jogador WHERE nome ILIKE %s",
+                (f"%{nome}%",)
+            )
 
-        resultados = cursor.fetchall()
+            conexao.commit()
+            st.text("jogador apagado com sucesso!")
 
-        if not resultados:
-            print("clube não encontrado.")
+    elif decisao == "clube":
+
+        st.text("apagar um clube vai mover todos os jogadores seram movidos para (sem clube!)")
+        nome = st.text_input("digite o nome do clube: ")
+
+        if st.button("Apagar Clube"):
+            #verificações
+            if not nome:
+                st.text("preencha os dados")
+                return 
+
+            cursor.execute(
+                "SELECT clube_id FROM clube WHERE nome ILIKE %s",
+                (f"%{nome}%",)
+            )
+
+            resultados = cursor.fetchall()
+
+            if not resultados:
+                print("clube não encontrado.")
+                return
+
+            elif len(resultados) > 1:
+                print("mais de um clube encontrado. seja mais específico.")
+                return
+
+            #efetivação
+            clube_id = resultados[0][0]
+
+            cursor.execute( #atualiza todos os jogadores para "sem clube"
+                "UPDATE jogador SET fk_clube_id = (SELECT clube_id FROM clube WHERE nome = 'sem clube') WHERE fk_clube_id = %s",
+                (clube_id,)
+            )
+
+            cursor.execute( # apaga clube
+                "DELETE FROM clube WHERE clube_id = %s",
+                (clube_id,)
+            )
+
+            conexao.commit()
+            st.success("clube apagado com sucesso!")
             return
-
-        if len(resultados) > 1:
-            print("mais de um clube encontrado. seja mais específico.")
-            return
-
-        clube_id = resultados[0][0]
-
-        cursor.execute(
-            "UPDATE jogador SET fk_clube_id = (SELECT clube_id FROM clube WHERE nome = 'sem clube') WHERE fk_clube_id = %s",
-            (clube_id,)
-        )
-
-        cursor.execute(
-            "DELETE FROM clube WHERE clube_id = %s",
-            (clube_id,)
-        )
-
-        conexao.commit()
-        print("clube e jogadores apagados com sucesso!")
-
-    else:
-        print("opção inválida.")
 
 
 def listar_dados():
+    # mostrar tambem gools
     decisao = input(
         "o que deseja pesquisar?\n"
         "[1] jogador\n"
@@ -415,3 +448,64 @@ def atualizar_dados():
     else:
         print("opção inválida.")
 
+def dados_estatisticos():
+   # mostrar resultado de max, min e media
+
+    cursor.execute(
+        "SELECT nome,MAX(vitorias) FROM clube GROUP BY nome LIMIT 1;",
+    )
+    resultados = cursor.fetchall()
+    nome_max = resultados[0][0]
+    vitorias_max = resultados[0][1]
+
+
+    cursor.execute(
+        "SELECT nome, MIN(vitorias) FROM clube GROUP BY nome LIMIT 1;",
+    )
+
+    resultados = cursor.fetchall()
+
+    nome_min = resultados[0][0]
+    vitorias_min = resultados[0][1]
+
+
+
+    cursor.execute(
+        "SELECT CAST(AVG(vitorias) AS DECIMAL(10,2))  FROM clube;",
+    )
+
+    resultados = cursor.fetchall()
+    vitorias_avg = resultados[0][0]
+
+    st.text(f"clubes com menor numero de vitorias: nome = {nome_min}, numero de vitorias = {vitorias_min} ")
+
+    st.text(f"media de vitorias = {vitorias_avg} ")
+
+    st.text(f"clubes com maior numero de vitorias: nome = {nome_max}, numero de vitorias = {vitorias_max} ")
+
+    # mostrar os 5 melhores clubes por vitorias
+
+    cursor.execute(
+        "SELECT nome,vitorias FROM clube ORDER BY vitorias DESC LIMIT 5;"
+    )
+
+    resultados = cursor.fetchall()
+
+    df = pd.DataFrame(
+        resultados,
+        columns=["Clube", "Vitórias"]
+    )
+
+
+    grafico_barras = pl.bar(
+        df,
+        x="Clube",
+        y="Vitórias",
+        title="5 melhores clubes com mais vitórias",
+        text="Vitórias"
+    )
+
+    st.plotly_chart(grafico_barras, use_container_width=True)
+
+    #gols por jogador
+    

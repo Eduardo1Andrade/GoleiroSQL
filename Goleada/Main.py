@@ -19,7 +19,7 @@ def main():
             st.session_state.tela = "criar_dados"
          
 
-        elif st.button("apagar Dados"):
+        elif st.button("Apagar Dados"):
             st.session_state.tela = "apagar_dados"
        
 
@@ -35,23 +35,28 @@ def main():
             st.text("encerrando o programa...")
             return
 
-        # função
-        if st.session_state.tela == "criar_dados":
-            func.criar_dados()
-        
-        
-        elif st.session_state.tela == "apagar_dados":
-            func.apagar_dados()
+    # função
+    if st.session_state.tela == "criar_dados":
+        func.criar_dados()
+    
+    
+    elif st.session_state.tela == "apagar_dados":
+        func.apagar_dados()
 
-        
-        if st.session_state.tela == "atualizar_dados":
-            func.atualizar_dados()
+    
+    if st.session_state.tela == "atualizar_dados":
+        func.atualizar_dados()
 
-        if st.session_state.tela == "listar_dados":
-            func.listar_dados()
+    if st.session_state.tela == "listar_dados":
+        func.listar_dados()
 
 
+    if st.session_state.tela != "inicial":
 
+        if st.button("Voltar ao menu"):
+            st.session_state.tela = "inicial"
+
+func.dados_estatisticos()
 resposta = func.login()
 if resposta == True:
     main()
