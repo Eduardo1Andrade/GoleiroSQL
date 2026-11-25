@@ -581,21 +581,20 @@ def dados_estatisticos():
    # mostrar resultado de max, min e media
 
     cursor.execute(
-        "SELECT nome,MAX(vitorias) FROM clube GROUP BY nome LIMIT 1;",
+        "SELECT MAX(vitorias) FROM clube;",
     )
     resultados = cursor.fetchall()
-    nome_max = resultados[0][0]
-    vitorias_max = resultados[0][1]
+
+    vitorias_max = resultados[0][0]
 
 
     cursor.execute(
-        "SELECT nome, MIN(vitorias) FROM clube GROUP BY nome LIMIT 1;",
+        "SELECT MIN(vitorias) FROM clube;",
     )
 
     resultados = cursor.fetchall()
 
-    nome_min = resultados[0][0]
-    vitorias_min = resultados[0][1]
+    vitorias_min = resultados[0][0]
 
 
 
@@ -606,11 +605,11 @@ def dados_estatisticos():
     resultados = cursor.fetchall()
     vitorias_avg = resultados[0][0]
 
-    st.text(f"clubes com menor numero de vitorias: nome = {nome_min}, numero de vitorias = {vitorias_min} ")
+    st.text(f"menor numero de vitorias por clube = {vitorias_min} ")
 
     st.text(f"media de vitorias = {vitorias_avg} ")
 
-    st.text(f"clubes com maior numero de vitorias: nome = {nome_max}, numero de vitorias = {vitorias_max} ")
+    st.text(f"maior numero de vitorias por clube = {vitorias_max} ")
 
     # mostrar os 5 melhores clubes por vitorias
 
